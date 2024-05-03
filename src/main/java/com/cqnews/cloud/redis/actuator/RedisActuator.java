@@ -1,10 +1,13 @@
 package com.cqnews.cloud.redis.actuator;
 
+import com.cqnews.cloud.redis.commands.CommandParse;
+import com.cqnews.cloud.redis.commands.ResponseCommand;
 import com.cqnews.cloud.redis.db.DB;
 import com.cqnews.cloud.redis.helper.Command;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
 
@@ -28,20 +31,17 @@ public class RedisActuator implements Actuator{
     public byte[] exec(List<String> commands) {
         String s = commands.get(0);
         Command command = Command.parseCommand(s);
-        byte[] okBytes = "+OK\r\n".getBytes(StandardCharsets.UTF_8);
-        byte[] notFoundBytes = "$-1\r\n".getBytes(StandardCharsets.UTF_8); // 假设用这个来表示key not found
-
         if (command == null) {
-            return okBytes;
+            return ResponseCommand.responseOk();
         }
 
         // strings
         if (command.getCommand().equals(Command.SET.getCommand())) {
-            if (commands.size() >= 3) { // 确保有足够的参数
+            if (commands.size() >= 3) {
                 System.out.println("commands:=" + commands);
                 db.doPutString(commands.get(1), commands.get(2).getBytes(), command);
             }
-            return okBytes;
+            return ResponseCommand.responseOk();
         } else if (command.getCommand().equals(Command.GET.getCommand())) {
             if (commands.size() >= 2) {
                 System.out.println("commands:=" + commands);
@@ -50,7 +50,7 @@ public class RedisActuator implements Actuator{
                     // Redis协议中字符串的响应格式是：$<length>\r\n<data>\r\n
                     int length = value.length;
                     byte[] lengthBytes = String.valueOf(length).getBytes(StandardCharsets.UTF_8);
-                    byte[] response = new byte[1+1+2+length + 2 ]; // $、\r\n、<data>和\r\n的长度
+                    byte[] response = new byte[1+lengthBytes.length+2+length + 2 ]; // $、\r\n、<data>和\r\n的长度
                     System.arraycopy("$".getBytes(StandardCharsets.UTF_8), 0, response, 0, 1);
                     System.arraycopy(lengthBytes, 0, response, 1, lengthBytes.length);
                     System.arraycopy(("\r\n").getBytes(StandardCharsets.UTF_8), 0, response, 1 + lengthBytes.length, 2);
@@ -58,11 +58,37 @@ public class RedisActuator implements Actuator{
                     System.arraycopy(("\r\n").getBytes(StandardCharsets.UTF_8), 0, response, 1 + lengthBytes.length + 2 + value.length, 2);
                     return response;
                 } else {
-                    return notFoundBytes; // 如果key不存在，返回特殊的字节数组
+                    return ResponseCommand.responseErr(); // 如果key不存在，返回特殊的字节数组
                 }
             }
+        } else if (command.getCommand().equals(Command.MSET.getCommand())) {
+            System.out.println("commands:=" + commands);
+                //mset k1 v1 k2 v2
+            if (commands.size() >= 3) {
+                for (int i = 1; i < commands.size(); i += 2) {
+                    String key = commands.get(i);
+                    String value = commands.get(i + 1);
+                    db.doPutString(key, value.getBytes(), command);
+                }
+            }
+        } else if (command.getCommand().equals(Command.MGET.getCommand())) {
+            System.out.println("commands:=" + commands);
+            List<String> values = new ArrayList<>();
+            for (int i = 1; i < commands.size(); i++) {
+                String key = commands.get(i);
+                byte[] valueBytes = db.get(key,command);
+                if (valueBytes != null) {
+                    values.add(new String(valueBytes));
+                } else {
+                    values.add(null);
+                }
+            }
+            return ResponseCommand.responseMGet(values);
         }
-        // 可能需要处理其他命令或返回错误
-        return okBytes; // 或者返回错误，取决于你的应用逻辑
+        // ping pong
+        if (command.getCommand().equals(Command.PING.getCommand())) {
+            return ResponseCommand.responsePing();
+        }
+        return ResponseCommand.responseOk();
     }
 }

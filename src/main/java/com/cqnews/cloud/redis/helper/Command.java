@@ -2,10 +2,13 @@ package com.cqnews.cloud.redis.helper;
 
 public enum Command {
 
+    // ping pong
+    PING("ping","ping"),
+    PONG("PONG","PONG"),
+
     // Strings
     SET("set","string set"),
     GET("get","string get"),
-
     MSET("mset", "string mset"),
     MGET("mget","stringm mget");
 

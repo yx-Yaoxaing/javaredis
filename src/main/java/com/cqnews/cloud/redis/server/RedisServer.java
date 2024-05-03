@@ -95,7 +95,7 @@ public class RedisServer {
         buffer.flip();
         byte[] bytes = new byte[buffer.remaining()];
         buffer.get(bytes);
-        List<String> commandList = commandParse.parseBulkStrings(buffer);
+        List<String> commandList = commandParse.parse(buffer);
         // 执行命令
         byte[] writeByteData = actuator.exec(commandList);
 

@@ -9,51 +9,31 @@ import java.util.List;
  */
 public class CommandParse {
 
-    /**
-     * *3
-     * $3
-     * set
-     * $3
-     * ky1
-     * $2
-     * v2
-     */
-    public Object parse(String respString) {
+    public List<String> parse(ByteBuffer buffer) {
 
         // 在 RESP 中，数据的第一个字节决定其类型。
         // ( CRLF \r\n) 是协议的终止符，它总是分隔各个部分。
-        char[] charArray = respString.toCharArray();
-        
+
+        // 切换读模式
+        buffer.flip();
+        buffer.mark();
+        byte firstByteData = buffer.get();
+        // 读取第一个字节 来判断 是属于哪一种类型
+        switch (firstByteData) {
+            case '+' :
+                break;
+            case '*':
+                return parseBulkStrings(buffer);
+            case '$':
+                break;
+        }
+
 
         return null;
     }
 
-    /**
-     *  第一个字节是 $ 代表是二进制安全的字符串
-     *  $3 代表后续读三个长度的字符串
-     *  * $3
-     *  * set
-     *
-     * @param resp
-     */
-    public void parse(String resp,boolean res){
-        char[] charArray = resp.toCharArray();
-        for (int i = 0; i < charArray.length; i++) {
-            char index = charArray[i];
-            switch (index) {
-                case '*' :
-                    break;
-                case '$' :
-                   // parseBulkStrings(resp);
-                case '+' :
-                    break;
-            }
-        }
-    }
-
     public List<String> parseBulkStrings(ByteBuffer buffer) {
-        // 切换读模式
-        buffer.flip();
+        buffer.reset();
         buffer.get(); // 跳过 '*'
         // 读取数组长度
         int arrayLength = 0;
@@ -101,4 +81,7 @@ public class CommandParse {
     }
         return list;
   }
+
+
+
 }
