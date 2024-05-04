@@ -2,6 +2,7 @@ package com.cqnews.cloud.redis.actuator;
 
 import com.cqnews.cloud.redis.commands.CommandParse;
 import com.cqnews.cloud.redis.commands.ResponseCommand;
+import com.cqnews.cloud.redis.datastruct.DataTypeEnum;
 import com.cqnews.cloud.redis.db.DB;
 import com.cqnews.cloud.redis.helper.Command;
 
@@ -39,7 +40,7 @@ public class RedisActuator implements Actuator{
         if (command.getCommand().equals(Command.SET.getCommand())) {
             if (commands.size() >= 3) {
                 System.out.println("commands:=" + commands);
-                db.doPutString(commands.get(1), commands.get(2).getBytes(), command);
+                db.doPutString(commands.get(1), commands.get(2).getBytes(), DataTypeEnum.REDIS_STRING);
             }
             return ResponseCommand.responseOk();
         } else if (command.getCommand().equals(Command.GET.getCommand())) {
@@ -68,7 +69,7 @@ public class RedisActuator implements Actuator{
                 for (int i = 1; i < commands.size(); i += 2) {
                     String key = commands.get(i);
                     String value = commands.get(i + 1);
-                    db.doPutString(key, value.getBytes(), command);
+                    db.doPutString(key, value.getBytes(), DataTypeEnum.REDIS_STRING);
                 }
             }
         } else if (command.getCommand().equals(Command.MGET.getCommand())) {
@@ -85,6 +86,15 @@ public class RedisActuator implements Actuator{
             }
             return ResponseCommand.responseMGet(values);
         }
+
+        // list
+        if (command.getCommand().equals(Command.LPUSH.getCommand())) {
+            String key = commands.get(1);
+        }
+
+
+
+
         // ping pong
         if (command.getCommand().equals(Command.PING.getCommand())) {
             return ResponseCommand.responsePing();

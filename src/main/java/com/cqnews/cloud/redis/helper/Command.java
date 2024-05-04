@@ -10,7 +10,14 @@ public enum Command {
     SET("set","string set"),
     GET("get","string get"),
     MSET("mset", "string mset"),
-    MGET("mget","stringm mget");
+    MGET("mget","stringm mget"),
+
+    // list
+    LPUSH("lpush","list lpush"),
+    LPOP("lpop","list lpop"),
+    LLEN("llen","list llen"),
+    LMOVE("lmove","list lmove"),
+    LTRIM("ltrim","list ltrim");
 
     private final String command;
     private final String desc;
