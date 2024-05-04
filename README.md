@@ -20,7 +20,7 @@
   * rdb
 
 ## 核心架构流程
-
+<img src="image/redis设计流程图.png">
 
 ## redis理论知识
 ### 协议RESP

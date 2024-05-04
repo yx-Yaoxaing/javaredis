@@ -1,12 +1,9 @@
 package com.cqnews.cloud.redis.actuator;
 
-import com.cqnews.cloud.redis.commands.CommandParse;
 import com.cqnews.cloud.redis.commands.ResponseCommand;
 import com.cqnews.cloud.redis.datastruct.DataTypeEnum;
 import com.cqnews.cloud.redis.db.DB;
 import com.cqnews.cloud.redis.helper.Command;
-
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -30,6 +27,7 @@ public class RedisActuator implements Actuator{
 
     @Override
     public byte[] exec(List<String> commands) {
+        System.out.println(Thread.currentThread().getName()+"执行器执行");
         String s = commands.get(0);
         Command command = Command.parseCommand(s);
         if (command == null) {
