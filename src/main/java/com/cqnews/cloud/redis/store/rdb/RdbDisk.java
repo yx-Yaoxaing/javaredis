@@ -3,7 +3,7 @@ package com.cqnews.cloud.redis.store.rdb;
 import com.cqnews.cloud.redis.store.Disk;
 
 /**
- * rdb 
+ * rdb
  */
 public class RdbDisk implements Disk {
     @Override
