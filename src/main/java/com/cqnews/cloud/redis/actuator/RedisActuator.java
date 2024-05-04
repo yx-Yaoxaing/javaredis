@@ -90,8 +90,15 @@ public class RedisActuator implements Actuator{
         // list
         if (command.getCommand().equals(Command.LPUSH.getCommand())) {
             String key = commands.get(1);
+            String[] array = new String[commands.size()-1-1];
+            List<String> strings = Command.replaceValue(commands, 2, commands.size()-1);
+            array = strings.toArray(array);
+            db.put(key,DataTypeEnum.REDIS_LIST,command,array);
+        } else if (command.getCommand().equals(Command.LPOP.getCommand())){
+            String key = commands.get(1);
+            byte[] bytes = db.get(key, null, DataTypeEnum.REDIS_LIST, command);
+            return ResponseCommand.responseValue(bytes);
         }
-
 
 
 

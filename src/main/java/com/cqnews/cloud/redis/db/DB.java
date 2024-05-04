@@ -4,6 +4,7 @@ import com.cqnews.cloud.redis.datastruct.DataTypeEnum;
 import com.cqnews.cloud.redis.datastruct.RedisObject;
 import com.cqnews.cloud.redis.helper.Command;
 
+import java.util.LinkedList;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -51,14 +52,43 @@ public class DB {
         RedisObject redisObject = new RedisObject();
         redisObject.setType(dataTypeEnum.getType());
 
-        if (dataTypeEnum == DataTypeEnum.REDIS_LIST) {
 
+        if (dataTypeEnum == DataTypeEnum.REDIS_LIST) {
+            LinkedList<byte[]> list = new LinkedList<>();
+            RedisObject cacheRedisObject = dbStore.get(key);
+            if (cacheRedisObject != null) {
+                list = (LinkedList<byte[]>) cacheRedisObject.getPtr();
+            }
+            if (command == Command.LPUSH) {
+                for (String val : value) {
+                    byte[] bytes = val.getBytes();
+                    list.addFirst(bytes);
+                }
+                redisObject.setPtr(list);
+            }
+            redisObject.setPtr(list);
+            dbStore.put(key.getBytes(),2000,redisObject);
+        }
+    }
+
+
+    public byte[] get(String key,String filed,DataTypeEnum dataTypeEnum,Command command){
+        Store dbStore = dbMap.get(0);
+        if (command.getCommand().equals(Command.LPOP.getCommand())) {
+            RedisObject cacheRedisObject = dbStore.get(key);
+            if (cacheRedisObject == null) {
+                return null;
+            }
+            LinkedList<byte[]> data = (LinkedList<byte[]>) cacheRedisObject.getPtr();
+            if (data.size() == 0) {
+                return null;
+            }
+            byte[] bytes = data.removeFirst();
+            return bytes;
         }
 
-        redisObject.setPtr(value);
-
-
-        dbStore.put(key.getBytes(),2000,redisObject);
+        return null;
     }
+
 
 }

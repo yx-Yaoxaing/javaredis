@@ -18,6 +18,17 @@ public class ResponseCommand {
     public static byte[] responseErr(){
         return "$-1\r\n".getBytes(StandardCharsets.UTF_8);
     }
+
+    public static byte[] responseValue(byte[] bytes){
+        StringBuilder sb = new StringBuilder();
+        if (bytes == null || bytes.length == 0) {
+            return "*0\r\n".getBytes(StandardCharsets.UTF_8); // 空列表
+        }
+        sb.append("$").append(bytes.length).append("\r\n");
+        sb.append(new String(bytes)).append("\r\n");
+        return sb.toString().getBytes(StandardCharsets.UTF_8);
+    }
+
     public static byte[] responseMGet(List<String> values) {
         if (values == null || values.isEmpty()) {
             return "*0\r\n".getBytes(StandardCharsets.UTF_8); // 空列表

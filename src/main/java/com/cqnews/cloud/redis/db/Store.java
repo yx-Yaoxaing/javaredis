@@ -17,5 +17,7 @@ public interface Store {
 
     byte[] get(byte[] key);
 
+    RedisObject get(String key);
+
 
 }

@@ -27,4 +27,9 @@ public class KVMemoryStore implements MemoryStore{
         }
         return new byte[0];
     }
+
+    @Override
+    public RedisObject get(String key) {
+        return db.get(key);
+    }
 }

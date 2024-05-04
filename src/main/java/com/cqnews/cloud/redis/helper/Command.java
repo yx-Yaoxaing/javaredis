@@ -1,5 +1,8 @@
 package com.cqnews.cloud.redis.helper;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public enum Command {
 
     // ping pong
@@ -46,6 +49,14 @@ public enum Command {
             }
         }
         return null;
+    }
+
+    public static final List<String> replaceValue(List<String> commands,int i,int j){
+        ArrayList<String> list = new ArrayList<>();
+        for (int k = i; k <=j; k++) {
+            list.add(commands.get(k));
+        }
+        return list;
     }
 
 
