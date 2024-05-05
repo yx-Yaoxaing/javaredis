@@ -5,6 +5,7 @@ import com.cqnews.cloud.redis.actuator.RedisActuator;
 import com.cqnews.cloud.redis.commands.Command;
 import com.cqnews.cloud.redis.commands.CommandExecutor;
 import com.cqnews.cloud.redis.commands.CommandParse;
+import com.cqnews.cloud.redis.config.RedisConfig;
 import com.cqnews.cloud.redis.exception.ConstructorException;
 
 import java.io.IOException;
@@ -33,6 +34,8 @@ public class RedisServer {
     private Selector selector;
     private ServerSocketChannel serverSocketChannel;
 
+    private RedisConfig redisConfig;
+
     private CommandParse commandParse;
 
     private CommandExecutor commandExecutor;
@@ -53,6 +56,11 @@ public class RedisServer {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public boolean start(RedisConfig redisConfig) throws Exception{
+        this.redisConfig = redisConfig;
+        return this.start(redisConfig.getPort());
     }
 
     public boolean start(int port) throws Exception {
