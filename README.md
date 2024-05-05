@@ -7,17 +7,17 @@
 <img src="image/架构redis.png">
 <img src="image/效果图.png">
 ## 简介
-+ tcp服务没有采用netty实现，而是采用原生的NIO
++ tcp服务没有采用netty实现，而是采用原生的NIO(全部实现)
 + redis是一个巨大的map，有着频繁扩容和缩容的操作，所以这里并不采用Java自带的HashMap，而是自定义实现的渐进式hash扩容Map
 + 常规数据类型与操作指令支持
-  * string：get/mget/set/mset
-  * list：lpush/lpop/rpush/rpop/lrange
-  * set：sadd/sismember/srem
-  * hashmap：hset/hget/hdel
-  * sortedset：zadd/zremzrangebyscore 
+  * string：get/mget/set/mset(全部实现)
+  * list：lpush/lpop/rpush/rpop/lrange(lpush、lpop已实现)
+  * set：sadd/sismember/srem(未完成)
+  * hashmap：hset/hget/hdel(未完成)
+  * sortedset：zadd/zremzrangebyscore (未完成)
 + 数据持久化机制
-  * aof
-  * rdb
+  * aof(已开始未完成)
+  * rdb(未完成)
  
 ## 核心架构流程
 <img src="image/redis设计流程图.png">
