@@ -193,7 +193,6 @@ public class RedisServer {
     public static RedisServer newInstance(){
         if (startAtomic.compareAndSet(false,true)) {
             RedisServer redisServer = new RedisServer();
-
             return redisServer;
         } else {
             throw new ConstructorException("Redis socket server already start");

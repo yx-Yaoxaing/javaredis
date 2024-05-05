@@ -2,6 +2,7 @@ package com.cqnews.cloud.redis;
 
 import com.cqnews.cloud.redis.config.RedisConfig;
 import com.cqnews.cloud.redis.server.RedisServer;
+import com.cqnews.cloud.redis.server.RedisServerStart;
 
 import java.io.IOException;
 
@@ -12,8 +13,7 @@ import java.io.IOException;
  *  3.初始化db
  *  4.加载disk
  */
-public class RedisStartUp {
-
+public class RedisStartUp extends RedisServerStart {
     public static void main(String[] args) throws Exception {
         // Java命令行启动 如果没有指定配置文件 就加载resource
         RedisServer redisServer = RedisServer.newInstance();

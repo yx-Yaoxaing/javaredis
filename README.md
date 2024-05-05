@@ -31,3 +31,9 @@
 个人理解就是二进制传输协议
 ### rdb和aof
 + <a>https://redisbook.readthedocs.io/en/latest/internal/rdb.html</a> 先看rdb的设计 然后理解它的设计，然后用代码实现即可。
+### 主从复制
++ <a>https://redis.io/docs/latest/operate/oss_and_stack/management/replication/</a>
+### 数据结构和数据类型
+<a>https://redis.io/docs/latest/develop/data-types/</a>
+#### 数据结构
++ list采用的双向链表
