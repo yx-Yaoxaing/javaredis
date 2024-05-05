@@ -17,8 +17,8 @@
   * hashmap：hset/hget/hdel(未完成)
   * sortedset：zadd/zremzrangebyscore (未完成)
 + 数据持久化机制
-  * aof(已开始未完成)
-  * rdb(未完成)
+  * aof(未完成)
+  * rdb(已开始未完成)
  
 ## 核心架构流程
 <img src="image/redis设计流程图.png">
