@@ -2,6 +2,8 @@ package com.cqnews.cloud.redis.server;
 
 import com.cqnews.cloud.redis.actuator.Actuator;
 import com.cqnews.cloud.redis.actuator.RedisActuator;
+import com.cqnews.cloud.redis.commands.Command;
+import com.cqnews.cloud.redis.commands.CommandExecutor;
 import com.cqnews.cloud.redis.commands.CommandParse;
 import com.cqnews.cloud.redis.exception.ConstructorException;
 
@@ -15,6 +17,8 @@ import java.nio.channels.SocketChannel;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -30,9 +34,12 @@ public class RedisServer {
 
     private CommandParse commandParse;
 
-    private Actuator actuator;
+    private CommandExecutor commandExecutor;
 
     private ByteBuffer buffer = ByteBuffer.allocate(1024);
+
+    // 工作线程池
+    private final ExecutorService workThreadPool =Executors.newFixedThreadPool(8);
 
     private RedisServer(){
         try {
@@ -40,7 +47,7 @@ public class RedisServer {
             selector = Selector.open();
             serverSocketChannel = ServerSocketChannel.open();
             commandParse = new CommandParse();
-            actuator = new RedisActuator();
+            commandExecutor = new CommandExecutor(5000);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -67,7 +74,13 @@ public class RedisServer {
                     handleAccept(key);
                 } else if (key.isReadable()) {
                     // 处理读取数据
-                    handleRead(key);
+                    workThreadPool.submit(()->{
+                        try {
+                            handleRead(key);
+                        } catch (IOException e) {
+                            throw new RuntimeException(e);
+                        }
+                    });
                 }
             }
         }
@@ -96,10 +109,18 @@ public class RedisServer {
         buffer.get(bytes);
         List<String> commandList = commandParse.parse(buffer);
         // 执行命令
-        byte[] writeByteData = actuator.exec(commandList);
+        Command command = new Command();
+        command.setCommands(commandList);
+        command.setSubmitTime(System.currentTimeMillis());
+        command.setSubmiTthreadName(Thread.currentThread().getName());
+        command.setSocketChannel(socketChannel);
 
-
-        socketChannel.write(ByteBuffer.wrap(writeByteData));
+        // 解析的命令 交予  命令执行器 单线程模型
+        try {
+            commandExecutor.enqueueCommand(command);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public static RedisServer newInstance(){
