@@ -89,7 +89,12 @@ public class RedisServer {
         ByteBuffer buffer = ByteBuffer.allocate(1024);
 
         try {
-            int bytesRead = client.read(buffer);
+            int bytesRead = -1;
+            try {
+                bytesRead = client.read(buffer);
+            } catch (Exception e) {
+                client.close();
+            }
             if (bytesRead == -1) {
                 client.close();
                 channels.remove(client);
