@@ -14,6 +14,7 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
@@ -35,7 +36,7 @@ public class RedisServer {
     private CommandParse commandParse;
 
     private CommandExecutor commandExecutor;
-
+    private Set<SocketChannel> channels;
     private ByteBuffer buffer = ByteBuffer.allocate(1024);
 
     // 工作线程池
@@ -48,43 +49,95 @@ public class RedisServer {
             serverSocketChannel = ServerSocketChannel.open();
             commandParse = new CommandParse();
             commandExecutor = new CommandExecutor(5000);
+            channels = new HashSet<>();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public boolean start(int port) throws IOException {
+    public boolean start(int port) throws Exception {
         serverSocketChannel.socket().bind(new InetSocketAddress(port));
         // 设为非阻塞模式
         serverSocketChannel.configureBlocking(false);
         // 将ServerSocketChannel注册到Selector上，并指定监听Accept事件
         serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
         while (true) {
-            // 阻塞直到有事件发生
-            selector.select();
+            int readyChannels = selector.select();
+            if (readyChannels == 0) continue;
+
             // 获取所有发生的事件
-            Set<SelectionKey> selectionKeys = selector.selectedKeys();
-            Iterator<SelectionKey> keyIterator = selectionKeys.iterator();
+            Set<SelectionKey> selectedKeys = selector.selectedKeys();
+            Iterator<SelectionKey> keyIterator = selectedKeys.iterator();
             while (keyIterator.hasNext()) {
                 SelectionKey key = keyIterator.next();
-                keyIterator.remove(); // 需要手动移除，否则会重复处理
 
                 if (key.isAcceptable()) {
-                    // 处理连接请求
-                    handleAccept(key);
+                    accept(key);
                 } else if (key.isReadable()) {
-                    // 处理读取数据
-                    workThreadPool.submit(()->{
-                        try {
-                            handleRead(key);
-                        } catch (IOException e) {
-                            throw new RuntimeException(e);
-                        }
-                    });
+                    read(key);
                 }
+
+                keyIterator.remove();
             }
         }
     }
+
+
+
+    private void read(SelectionKey key) {
+        SocketChannel client = (SocketChannel) key.channel();
+        ByteBuffer buffer = ByteBuffer.allocate(1024);
+
+        try {
+            int bytesRead = client.read(buffer);
+            if (bytesRead == -1) {
+                client.close();
+                channels.remove(client);
+                return;
+            }
+
+            buffer.flip();
+            byte[] bytes = new byte[buffer.remaining()];
+            buffer.get(bytes);
+            List<String> commandList = commandParse.parse(buffer);
+            // 执行命令
+            Command command = new Command();
+            command.setCommands(commandList);
+            command.setSubmitTime(System.currentTimeMillis());
+            command.setSubmiTthreadName(Thread.currentThread().getName());
+            command.setSocketChannel(client);
+            // 提交命令到执行器
+            workThreadPool.submit(() -> {
+                try {
+                    commandExecutor.enqueueCommand(command);
+                } catch (Exception e) {
+                    // 处理或记录异常
+                    e.printStackTrace();
+                }
+            });
+
+            // 清理缓冲区以准备下一次读取
+            buffer.clear();
+        } catch (Exception e) {
+            // 处理或记录异常
+            e.printStackTrace();
+            try {
+                client.close();
+            } catch (Exception ex) {
+                // 忽略关闭异常
+            }
+            channels.remove(client);
+        }
+    }
+
+    private void accept(SelectionKey key) throws Exception {
+        ServerSocketChannel serverSocketChannel = (ServerSocketChannel) key.channel();
+        SocketChannel client = serverSocketChannel.accept();
+        client.configureBlocking(false);
+        client.register(selector, SelectionKey.OP_READ);
+        channels.add(client);
+    }
+
     private void handleAccept(SelectionKey key) throws IOException {
         ServerSocketChannel serverChannel = (ServerSocketChannel) key.channel();
         SocketChannel socketChannel = serverChannel.accept();

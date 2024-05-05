@@ -13,7 +13,7 @@ import java.io.IOException;
  */
 public class RedisStartUp {
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws Exception {
         // Java命令行启动 如果没有指定配置文件 就加载resource
         if (args.length == 0) {
             RedisServer redisServer = RedisServer.newInstance();
