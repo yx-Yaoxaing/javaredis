@@ -19,5 +19,7 @@ public interface Store {
 
     RedisObject get(String key);
 
+    ConcurrentHashMap<String, RedisObject> getDb();
+
 
 }

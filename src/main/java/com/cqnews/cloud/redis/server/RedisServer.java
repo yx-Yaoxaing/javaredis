@@ -98,9 +98,11 @@ public class RedisServer {
             try {
                 bytesRead = client.read(buffer);
             } catch (Exception e) {
+                // 客户端异常退出
                 channels.remove(client);
                 client.close();
             }
+            // 当客户端退出的时候 会出发read事件 这里返回的是-1
             if (bytesRead == -1) {
                 client.close();
                 channels.remove(client);
@@ -111,6 +113,7 @@ public class RedisServer {
             byte[] bytes = new byte[buffer.remaining()];
             buffer.get(bytes);
             List<String> commandList = commandParse.parse(buffer);
+            System.out.println("redis server command:"+commandList);
             // 执行命令
             Command command = new Command();
             command.setCommands(commandList);

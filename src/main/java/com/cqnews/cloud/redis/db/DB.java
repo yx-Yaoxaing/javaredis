@@ -3,18 +3,24 @@ package com.cqnews.cloud.redis.db;
 import com.cqnews.cloud.redis.datastruct.DataTypeEnum;
 import com.cqnews.cloud.redis.datastruct.RedisObject;
 import com.cqnews.cloud.redis.helper.Command;
+import com.cqnews.cloud.redis.store.rdb.RdbDiskStore;
 
 import java.util.LinkedList;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public class DB {
 
     private static final int DEFAULT_DB_COUNT = 16;
 
     private ConcurrentHashMap<Integer,Store> dbMap;
-
+    private RdbDiskStore rdbDiskStore;
     private  Store store;
+
+    private ScheduledExecutorService executor;
 
     public DB() {
         this(DEFAULT_DB_COUNT);
@@ -22,9 +28,15 @@ public class DB {
 
     public DB(int dbCount) {
         dbMap = new ConcurrentHashMap<>(dbCount);
-        for (int i = 0; i < dbCount; i++) {
+        rdbDiskStore = new RdbDiskStore();
+        executor = Executors.newScheduledThreadPool(1);
+        for (int i = 0; i < 1; i++) {
             store = new KVMemoryStore();
             dbMap.put(i,store);
+            rdbDiskStore.rabLoad("D:\\code\\zjj",store.getDb());
+            executor.scheduleAtFixedRate(()->{
+                rdbDiskStore.rdbSave(store.getDb(),"D:\\code\\zjj");
+            },3,5, TimeUnit.SECONDS);
         }
     }
 

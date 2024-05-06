@@ -1,7 +1,9 @@
 package com.cqnews.cloud.redis.datastruct;
 
 
-public class RedisObject {
+import java.io.Serializable;
+
+public class RedisObject implements Serializable {
 
 
     // 使用的数据类型是什么

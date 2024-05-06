@@ -33,7 +33,6 @@ public class CommandExecutor {
     }
 
     private void executeCommand(Command command) {
-        System.out.println("提交命令的线程名："+command.getSubmiTthreadName()+"执行任务的线程名称："+Thread.currentThread().getName());
         byte[] writeByteData = actuator.exec(command.getCommands());
 
         try {
