@@ -5,10 +5,7 @@ import com.cqnews.cloud.redis.actuator.RedisActuator;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.*;
 
 public class CommandExecutor {
     private final BlockingQueue<Command> commandQueue;
@@ -16,7 +13,7 @@ public class CommandExecutor {
     private Actuator actuator;
     public CommandExecutor(int queueSize) {
         this.commandQueue = new LinkedBlockingQueue<>(queueSize);
-        this.executorService = Executors.newSingleThreadExecutor();
+        this.executorService = Executors.newSingleThreadExecutor(r -> new Thread(r,"redis-actuator"));
         this.actuator = new RedisActuator();
         // 启动命令执行线程
         executorService.submit(() -> {
@@ -25,7 +22,6 @@ public class CommandExecutor {
                     Command command = commandQueue.take(); // 阻塞等待命令
                     executeCommand(command); // 执行命令
                 } catch (InterruptedException e) {
-                    //Thread.currentThread().interrupt();
                     break;
                 }
             }

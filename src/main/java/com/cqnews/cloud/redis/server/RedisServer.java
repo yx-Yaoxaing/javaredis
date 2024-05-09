@@ -66,6 +66,11 @@ public class RedisServer {
         serverSocketChannel.configureBlocking(false);
         // 将ServerSocketChannel注册到Selector上，并指定监听Accept事件
         serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
+        Factory<Work> factory = new WorkFactory();
+        int cpu = Runtime.getRuntime().availableProcessors();
+        for (int i = 0; i < cpu; i++) {
+            factory.create("work-redis-read-"+i,commandExecutor,commandParse);
+        }
         while (true) {
             int readyChannels = selector.select();
             if (readyChannels == 0) continue;
@@ -73,13 +78,17 @@ public class RedisServer {
             // 获取所有发生的事件
             Set<SelectionKey> selectedKeys = selector.selectedKeys();
             Iterator<SelectionKey> keyIterator = selectedKeys.iterator();
+
             while (keyIterator.hasNext()) {
                 SelectionKey key = keyIterator.next();
-
                 if (key.isAcceptable()) {
-                    accept(key);
-                } else if (key.isReadable()) {
-                    read(key);
+                    //accept(key);
+                    ServerSocketChannel serverSocketChannel = (ServerSocketChannel) key.channel();
+                    SocketChannel client = serverSocketChannel.accept();
+                    // 设置为非阻塞
+                    client.configureBlocking(false);
+                    // 关联work thread的selector 只关系read事件
+                    factory.poll().resiger(client);
                 }
 
                 keyIterator.remove();

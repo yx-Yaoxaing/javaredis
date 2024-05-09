@@ -4,6 +4,10 @@ import com.cqnews.cloud.redis.commands.ResponseCommand;
 import com.cqnews.cloud.redis.datastruct.DataTypeEnum;
 import com.cqnews.cloud.redis.db.DB;
 import com.cqnews.cloud.redis.helper.Command;
+import com.cqnews.cloud.redis.server.Work;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -13,7 +17,7 @@ import java.util.Queue;
  * 执行器
  */
 public class RedisActuator implements Actuator{
-
+    Logger log =  LoggerFactory.getLogger(RedisActuator.class);
     // db层
     private DB db;
     // 存档任务指令
@@ -27,7 +31,6 @@ public class RedisActuator implements Actuator{
 
     @Override
     public byte[] exec(List<String> commands) {
-        System.out.println(Thread.currentThread().getName()+"执行器执行");
         String s = commands.get(0);
         Command command = Command.parseCommand(s);
         if (command == null) {
@@ -37,13 +40,13 @@ public class RedisActuator implements Actuator{
         // strings
         if (command.getCommand().equals(Command.SET.getCommand())) {
             if (commands.size() >= 3) {
-                System.out.println("commands:=" + commands);
+                log.info("actuator string command - set");
                 db.doPutString(commands.get(1), commands.get(2).getBytes(), DataTypeEnum.REDIS_STRING);
             }
             return ResponseCommand.responseOk();
         } else if (command.getCommand().equals(Command.GET.getCommand())) {
             if (commands.size() >= 2) {
-                System.out.println("commands:=" + commands);
+                log.info("actuator string command - get");
                 byte[] value = db.get(commands.get(1), command);
                 if (value != null) { // 假设db.get在找不到key时返回null
                     // Redis协议中字符串的响应格式是：$<length>\r\n<data>\r\n
@@ -61,7 +64,7 @@ public class RedisActuator implements Actuator{
                 }
             }
         } else if (command.getCommand().equals(Command.MSET.getCommand())) {
-            System.out.println("commands:=" + commands);
+            log.info("actuator string command - mset");
                 //mset k1 v1 k2 v2
             if (commands.size() >= 3) {
                 for (int i = 1; i < commands.size(); i += 2) {
@@ -71,7 +74,7 @@ public class RedisActuator implements Actuator{
                 }
             }
         } else if (command.getCommand().equals(Command.MGET.getCommand())) {
-            System.out.println("commands:=" + commands);
+            log.info("actuator string command - mget");
             List<String> values = new ArrayList<>();
             for (int i = 1; i < commands.size(); i++) {
                 String key = commands.get(i);
@@ -87,12 +90,14 @@ public class RedisActuator implements Actuator{
 
         // list
         if (command.getCommand().equals(Command.LPUSH.getCommand())) {
+            log.info("actuator list command - lpush");
             String key = commands.get(1);
             String[] array = new String[commands.size()-1-1];
             List<String> strings = Command.replaceValue(commands, 2, commands.size()-1);
             array = strings.toArray(array);
             db.put(key,DataTypeEnum.REDIS_LIST,command,array);
         } else if (command.getCommand().equals(Command.LPOP.getCommand())){
+            log.info("actuator list command - lpop");
             String key = commands.get(1);
             byte[] bytes = db.get(key, null, DataTypeEnum.REDIS_LIST, command);
             return ResponseCommand.responseValue(bytes);
@@ -102,6 +107,7 @@ public class RedisActuator implements Actuator{
 
         // ping pong
         if (command.getCommand().equals(Command.PING.getCommand())) {
+            log.info("actuator PING command - PING");
             return ResponseCommand.responsePing();
         }
         return ResponseCommand.responseOk();

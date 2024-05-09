@@ -4,7 +4,6 @@ import com.cqnews.cloud.redis.datastruct.RedisObject;
 import com.cqnews.cloud.redis.store.RdbDisk;
 
 import java.io.*;
-import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -30,7 +29,7 @@ public class RdbDiskStore implements RdbDisk {
 
         File rdbFile = new File(loadPath + "redis.rdb");
         if (!rdbFile.exists()) {
-            System.out.println("RDB file does not exist: " + rdbFile.getAbsolutePath());
+            System.err.println("RDB file does not exist: " + rdbFile.getAbsolutePath());
             return;
         }
 
@@ -42,13 +41,15 @@ public class RdbDiskStore implements RdbDisk {
             dataInputStream.readFully(magic);
             String magicString = new String(magic);
             if (!"REDIS".equals(magicString)) {
-                throw new IOException("Invalid RDB file magic block");
+                System.err.println("Invalid RDB file magic block");
+                return;
             }
 
             // 读取 RDB 版本号
             int version = dataInputStream.readInt();
             System.out.println("RDB version: " + Integer.toHexString(version));
 
+            // 哪一个数据db 默认0-15 16个
             byte dbSelector = dataInputStream.readByte();
 
             while (dataInputStream.available() > 0) {
@@ -58,7 +59,7 @@ public class RdbDiskStore implements RdbDisk {
                 dataInputStream.readFully(valueBytes);
 
                 RedisObject value = (RedisObject) byteArrayToObject(valueBytes);
-                System.out.println("从磁盘上恢复数据:key="+key+",value="+value);
+                System.out.println("从磁盘上恢复数据:key=" + key + ",value=" + value);
                 // 将键值对放入数据库中
                 db.put(key, value);
             }
@@ -70,11 +71,11 @@ public class RdbDiskStore implements RdbDisk {
     }
 
     @Override
-    public void rdbSave(ConcurrentHashMap<String, RedisObject> db,String savePath) {
+    public void rdbSave(ConcurrentHashMap<String, RedisObject> db, String savePath) {
         if (db == null || db.size() == 0) {
             return;
         }
-        try (OutputStream outputStream = new FileOutputStream(savePath+"redis.rdb");
+        try (OutputStream outputStream = new FileOutputStream(savePath + "redis.rdb");
              DataOutputStream dataOutputStream = new DataOutputStream(outputStream)) {
 
             // 写入 REDIS 标识符
@@ -98,11 +99,11 @@ public class RdbDiskStore implements RdbDisk {
             e.printStackTrace();
         }
 
-}
+    }
 
     @Override
     public CompletableFuture<Integer> timeExec() {
-        return CompletableFuture.supplyAsync(()->{
+        return CompletableFuture.supplyAsync(() -> {
             return 0;
         });
     }
