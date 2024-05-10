@@ -29,9 +29,9 @@ public class Work extends ServiceThread {
     Logger log =  LoggerFactory.getLogger(Work.class);
 
     private final String threadName;
-    private CommandExecutor commandExecutor;
-    private CommandParse commandParse;
-    private Selector selector;
+    private final CommandExecutor commandExecutor;
+    private final CommandParse commandParse;
+    private final Selector selector;
 
     private ConcurrentLinkedQueue<Runnable> queue = new ConcurrentLinkedQueue<>();
 

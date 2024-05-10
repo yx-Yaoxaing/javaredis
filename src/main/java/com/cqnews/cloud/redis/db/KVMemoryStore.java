@@ -8,7 +8,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class KVMemoryStore implements MemoryStore{
 
-    private ConcurrentHashMap<String, RedisObject> db ;
+    private ConcurrentHashMap<String, RedisObject> db;
 
 
     public KVMemoryStore() {
