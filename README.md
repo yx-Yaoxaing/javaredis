@@ -36,4 +36,7 @@
 ### 数据结构和数据类型
 <a>https://redis.io/docs/latest/develop/data-types/</a>
 #### 数据结构
-+ list采用的双向链表
++ list采用的双向链表(已实现)
++ dict采用的渐进式hash扩容(已实现)
++ sds没做采用的jdk String(已实现)
++ 跳表(未实现)

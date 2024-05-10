@@ -19,6 +19,7 @@ public class DictTest {
         dict.get("2");
         dict.get("2");
         dict.get("2");
+        System.out.println("size="+dict.size());
     }
 
 
