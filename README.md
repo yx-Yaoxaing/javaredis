@@ -1,4 +1,4 @@
-# redis  基于Java实现Redis
+#  基于Java实现Redis
 ## 前述
 + 关于redis作为缓存中间件是后端服务常见常用的缓存中间件，因为是基于C语言开源的，学了redis这么久就有了用golang或者Java实现一个redis的想法，但是网上已经有了golang版本的，所以我想做一个Java版本的redis.
 + 基本上是看着官网进行学习的<a>https://redis.io/docs redis,实现一个简易版本的redis 但是数据结构都会实现以及aof和rdb.
