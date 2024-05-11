@@ -79,9 +79,9 @@ public class RdbDiskStore implements RdbDisk {
                 db.put(key, value);
                 loadDiskToDbTotal.getAndIncrement();
             }
-            log.info("load disk to db memory total: {}",loadDiskToDbTotal.get());
+            log.info("rdb load disk to db memory total: {}",loadDiskToDbTotal.get());
         } catch (IOException e) {
-            log.error("load disk to db memory error:{}",e.getMessage());
+            log.error("rdb load disk to db memory error:{}",e.getMessage());
         }
     }
 
