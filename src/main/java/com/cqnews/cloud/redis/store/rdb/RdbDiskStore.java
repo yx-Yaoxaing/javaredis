@@ -1,7 +1,12 @@
 package com.cqnews.cloud.redis.store.rdb;
 
+import com.cqnews.cloud.redis.datastruct.Dict;
 import com.cqnews.cloud.redis.datastruct.RedisObject;
+import com.cqnews.cloud.redis.serialization.JdkSerialization;
+import com.cqnews.cloud.redis.serialization.Serialization;
 import com.cqnews.cloud.redis.store.RdbDisk;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.util.Map;
@@ -11,18 +16,20 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * rdb  https://redisbook.readthedocs.io/en/latest/internal/rdb.html
  */
+
 public class RdbDiskStore implements RdbDisk {
 
-    public static byte[] objectToByteArray(Object obj) throws IOException {
-        ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        ObjectOutputStream oos = new ObjectOutputStream(bos);
-        oos.writeObject(obj);
-        oos.close();
-        return bos.toByteArray();
+    private Logger log = LoggerFactory.getLogger(RdbDiskStore.class);
+
+    private Serialization<RedisObject> serialization;
+
+    public RdbDiskStore() {
+        serialization = new JdkSerialization();
     }
 
+
     @Override
-    public void rabLoad(String loadPath, ConcurrentHashMap<String, RedisObject> db) {
+    public void rabLoad(String loadPath, Dict<String, RedisObject> db) {
         if (loadPath == null || loadPath.isEmpty()) {
             return;
         }
@@ -58,42 +65,37 @@ public class RdbDiskStore implements RdbDisk {
                 byte[] valueBytes = new byte[dataInputStream.available()];
                 dataInputStream.readFully(valueBytes);
 
-                RedisObject value = (RedisObject) byteArrayToObject(valueBytes);
+                RedisObject value = serialization.byteArrayToObject(valueBytes);
                 System.out.println("从磁盘上恢复数据:key=" + key + ",value=" + value);
                 // 将键值对放入数据库中
                 db.put(key, value);
             }
         } catch (IOException e) {
             e.printStackTrace();
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException(e);
         }
     }
 
     @Override
-    public void rdbSave(ConcurrentHashMap<String, RedisObject> db, String savePath) {
+    public void rdbSave(Dict<String, RedisObject> db, String savePath) {
         if (db == null || db.size() == 0) {
             return;
         }
         try (OutputStream outputStream = new FileOutputStream(savePath + "redis.rdb");
              DataOutputStream dataOutputStream = new DataOutputStream(outputStream)) {
 
-            // 写入 REDIS 标识符
+            // 1.写入 REDIS 标识符
             dataOutputStream.writeBytes("REDIS");
-
-            // 写入 RDB 版本号（假设为 0006）
+            // 2.写入 RDB 版本号（假设为 0006）
             dataOutputStream.writeInt(Integer.parseInt("0006", 16)); // 将十六进制转换为整数
-
+            // 3.默认db 0
             dataOutputStream.writeByte(0);
-
+            // 4.值
             // 写入键值对数据
             for (Map.Entry<String, RedisObject> entry : db.entrySet()) {
                 // 写入键
                 dataOutputStream.writeUTF(entry.getKey());
-
-                // 写入值（这里简化为字符串）
-
-                dataOutputStream.write(objectToByteArray(entry.getValue()));
+                // 写入值
+                dataOutputStream.write(serialization.objectToByteArray(entry.getValue()));
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -108,12 +110,5 @@ public class RdbDiskStore implements RdbDisk {
         });
     }
 
-    public static Object byteArrayToObject(byte[] data) throws IOException, ClassNotFoundException {
-        ByteArrayInputStream bis = new ByteArrayInputStream(data);
-        ObjectInputStream ois = new ObjectInputStream(bis);
-        Object obj = ois.readObject();
-        ois.close();
-        return obj;
-    }
 
 }

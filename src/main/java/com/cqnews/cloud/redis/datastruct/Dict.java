@@ -82,7 +82,7 @@ public class Dict<K,V> implements Map<K,V> {
         int oldTableIndex = (oldTable.length - 1) & hash;
         // oldTable
         Node<K, V> kvNode = get(hash, oldTable, oldTableIndex, key);
-        if (kvNode == null) {
+        if (kvNode == null && newTable != null) {
             // newTable
             int newTableIndex = (newTable.length - 1) & hash;
             kvNode = get(hash, newTable, newTableIndex, key);
@@ -117,7 +117,7 @@ public class Dict<K,V> implements Map<K,V> {
             return null;
         }
         while (entry!= null) {
-            if (entry.hash == hash && (entry.key == key && key.equals(entry.key))) {
+            if (entry.hash == hash && (key.equals(entry.key))) {
                 return entry;
             }
             entry = entry.next;

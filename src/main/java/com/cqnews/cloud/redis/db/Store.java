@@ -1,5 +1,6 @@
 package com.cqnews.cloud.redis.db;
 
+import com.cqnews.cloud.redis.datastruct.Dict;
 import com.cqnews.cloud.redis.datastruct.RedisObject;
 import com.cqnews.cloud.redis.helper.Command;
 
@@ -19,7 +20,7 @@ public interface Store {
 
     RedisObject get(String key);
 
-    ConcurrentHashMap<String, RedisObject> getDb();
+    Dict<String, RedisObject> getDb();
 
 
 }

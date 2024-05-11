@@ -1,6 +1,7 @@
 package com.cqnews.cloud.redis.db;
 
 import com.cqnews.cloud.redis.datastruct.DataTypeEnum;
+import com.cqnews.cloud.redis.datastruct.Dict;
 import com.cqnews.cloud.redis.datastruct.RedisObject;
 import com.cqnews.cloud.redis.store.rdb.RdbDiskStore;
 
@@ -8,11 +9,11 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class KVMemoryStore implements MemoryStore{
 
-    private ConcurrentHashMap<String, RedisObject> db;
+    private Dict<String, RedisObject> db;
 
 
     public KVMemoryStore() {
-        db = new ConcurrentHashMap<>(256);
+        db = new Dict<>(2);
     }
 
 
@@ -38,7 +39,7 @@ public class KVMemoryStore implements MemoryStore{
     }
 
     @Override
-    public ConcurrentHashMap<String, RedisObject> getDb() {
+    public Dict<String, RedisObject> getDb() {
         return db;
     }
 }
