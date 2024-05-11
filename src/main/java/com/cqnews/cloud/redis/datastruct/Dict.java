@@ -112,7 +112,7 @@ public class Dict<K,V> implements Map<K,V> {
 
 
     private Node<K,V> get(int hash,Node<K,V> []table,int tableIndex,Object key){
-        Node<K,V> entry = oldTable[tableIndex];
+        Node<K,V> entry = table[tableIndex];
         if (entry == null) {
             return null;
         }

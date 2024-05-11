@@ -26,7 +26,9 @@ public class KVMemoryStore implements MemoryStore{
     @Override
     public byte[] get(byte[] key) {
         RedisObject redisObject = db.get(new String(key));
-
+        if (redisObject == null) {
+            return new byte[0];
+        }
         if (redisObject.getType() == DataTypeEnum.REDIS_STRING.getType()) {
             return (byte[]) redisObject.getPtr();
         }

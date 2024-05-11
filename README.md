@@ -5,7 +5,7 @@
 
 ## 架构图
 <img src="image/架构redis.png">
-<img src="image/效果图.png">
+<img src="image/实现图.png">
 
 ## 简介
 + tcp服务没有采用netty实现，而是采用原生的NIO(全部实现)
