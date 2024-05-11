@@ -12,6 +12,7 @@ import java.io.*;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * rdb  https://redisbook.readthedocs.io/en/latest/internal/rdb.html
@@ -22,6 +23,8 @@ public class RdbDiskStore implements RdbDisk {
     private Logger log = LoggerFactory.getLogger(RdbDiskStore.class);
 
     private Serialization<RedisObject> serialization;
+
+    private int lastTimeChangeTotal;
 
     public RdbDiskStore() {
         serialization = new JdkSerialization();
@@ -36,7 +39,7 @@ public class RdbDiskStore implements RdbDisk {
 
         File rdbFile = new File(loadPath + "redis.rdb");
         if (!rdbFile.exists()) {
-            System.err.println("RDB file does not exist: " + rdbFile.getAbsolutePath());
+            log.warn("RDB file does not exist: {}" ,rdbFile.getAbsolutePath());
             return;
         }
 
@@ -48,17 +51,17 @@ public class RdbDiskStore implements RdbDisk {
             dataInputStream.readFully(magic);
             String magicString = new String(magic);
             if (!"REDIS".equals(magicString)) {
-                System.err.println("Invalid RDB file magic block");
+                log.error("Invalid RDB file magic block");
                 return;
             }
 
             // 读取 RDB 版本号
             int version = dataInputStream.readInt();
-            System.out.println("RDB version: " + Integer.toHexString(version));
 
-            // 哪一个数据db 默认0-15 16个
+            // 哪一个数据db 默认0-15 16个 这里只实现了1个
             byte dbSelector = dataInputStream.readByte();
 
+            AtomicInteger loadDiskToDbTotal = new AtomicInteger();
             while (dataInputStream.available() > 0) {
                 String key = dataInputStream.readUTF();
 
@@ -66,23 +69,34 @@ public class RdbDiskStore implements RdbDisk {
                 dataInputStream.readFully(valueBytes);
 
                 RedisObject value = serialization.byteArrayToObject(valueBytes);
-                System.out.println("从磁盘上恢复数据:key=" + key + ",value=" + value);
                 // 将键值对放入数据库中
                 db.put(key, value);
+                loadDiskToDbTotal.getAndIncrement();
             }
+            log.info("load disk to db memory total: {}",loadDiskToDbTotal.get());
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("load disk to db memory error:{}",e.getMessage());
         }
     }
 
     @Override
-    public void rdbSave(Dict<String, RedisObject> db, String savePath) {
-        if (db == null || db.size() == 0) {
+    public void rdbSave(Dict<String, RedisObject> db, String savePath,int changeTotal) {
+        if (db == null || db.isEmpty()) {
+            log.info("rdb save disk,but changeTotal:{}",changeTotal);
             return;
         }
+
+        if (lastTimeChangeTotal == 0 && changeTotal > 0) {
+            doSave(db, savePath, changeTotal);
+        }
+        if (changeTotal - lastTimeChangeTotal > 5) {
+            doSave(db, savePath, changeTotal);
+        }
+    }
+
+    private void doSave(Dict<String, RedisObject> db, String savePath, int changeTotal) {
         try (OutputStream outputStream = new FileOutputStream(savePath + "redis.rdb");
              DataOutputStream dataOutputStream = new DataOutputStream(outputStream)) {
-
             // 1.写入 REDIS 标识符
             dataOutputStream.writeBytes("REDIS");
             // 2.写入 RDB 版本号（假设为 0006）
@@ -91,6 +105,9 @@ public class RdbDiskStore implements RdbDisk {
             dataOutputStream.writeByte(0);
             // 4.值
             // 写入键值对数据
+
+
+
             for (Map.Entry<String, RedisObject> entry : db.entrySet()) {
                 // 写入键
                 dataOutputStream.writeUTF(entry.getKey());
@@ -100,7 +117,8 @@ public class RdbDiskStore implements RdbDisk {
         } catch (IOException e) {
             e.printStackTrace();
         }
-
+        // 更新变动次数
+        lastTimeChangeTotal = changeTotal;
     }
 
     @Override

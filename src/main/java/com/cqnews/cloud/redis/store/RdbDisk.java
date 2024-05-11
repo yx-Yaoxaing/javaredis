@@ -17,7 +17,7 @@ public interface RdbDisk {
     /**
      * 将内存中的数据对象持久化成RDB文件
      */
-    void rdbSave(Dict<String, RedisObject> db, String savePath );
+    void rdbSave(Dict<String, RedisObject> db, String savePath,int changeTotal);
 
     /**
      * 加载执行save 返回的个数为持久化多少个key

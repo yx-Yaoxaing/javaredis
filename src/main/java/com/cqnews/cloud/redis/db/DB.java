@@ -7,10 +7,7 @@ import com.cqnews.cloud.redis.store.rdb.RdbDiskStore;
 
 import java.util.LinkedList;
 import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 public class DB {
 
@@ -19,7 +16,8 @@ public class DB {
     private ConcurrentHashMap<Integer,Store> dbMap;
     private RdbDiskStore rdbDiskStore;
     private  Store store;
-
+    // 改变次数
+    private int changeTotal;
     private ScheduledExecutorService executor;
 
     public DB() {
@@ -29,13 +27,13 @@ public class DB {
     public DB(int dbCount) {
         dbMap = new ConcurrentHashMap<>(dbCount);
         rdbDiskStore = new RdbDiskStore();
-        executor = Executors.newScheduledThreadPool(1);
+        executor = Executors.newScheduledThreadPool(1, r -> new Thread(r,"rdb thread"));
         for (int i = 0; i < 1; i++) {
             store = new KVMemoryStore();
             dbMap.put(i,store);
             rdbDiskStore.rabLoad("D:\\code\\zjj",store.getDb());
             executor.scheduleAtFixedRate(()->{
-                rdbDiskStore.rdbSave(store.getDb(),"D:\\code\\zjj");
+                rdbDiskStore.rdbSave(store.getDb(),"D:\\code\\zjj",changeTotal);
             },3,5, TimeUnit.SECONDS);
         }
     }
@@ -46,6 +44,7 @@ public class DB {
         redisObject.setType(dataTypeEnum.getType());
         redisObject.setPtr(value);
         dbStore.put(key.getBytes(),2000,redisObject);
+        changeTotal++;
         return true;
     }
 
@@ -80,6 +79,7 @@ public class DB {
             }
             redisObject.setPtr(list);
             dbStore.put(key.getBytes(),2000,redisObject);
+            changeTotal++;
         }
     }
 
