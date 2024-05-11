@@ -1,6 +1,7 @@
 package com.cqnews.cloud.redis.datastruct;
 
 import java.util.*;
+import java.util.function.Consumer;
 
 /**
  * 基座
@@ -22,10 +23,10 @@ public class Dict<K,V> implements Map<K,V> {
     private Node<K, V>[] oldTable;
     // 为了渐进式扩容 拿来存储的
     private Node<K, V>[] newTable;
-
+    transient Set<Map.Entry<K,V>> entrySet;
     // 是否正在进行扩容  默认false 代表没扩容
     private transient volatile boolean resizing = false;
-
+    transient int modCount;
     private transient int bucket = 0;
 
     public Dict(int capacity) {
@@ -110,6 +111,39 @@ public class Dict<K,V> implements Map<K,V> {
         return kvNode == null ? null : kvNode.getValue();
     }
 
+    private Node<K,V> getNode(Object key) {
+        // 先去oldTable查询 如果查询不到 就去newTable查询
+        int hash = hash(key);
+        int oldTableIndex = (oldTable.length - 1) & hash;
+        // oldTable
+        Node<K, V> kvNode = get(hash, oldTable, oldTableIndex, key);
+        if (kvNode == null && newTable != null) {
+            // newTable
+            int newTableIndex = (newTable.length - 1) & hash;
+            kvNode = get(hash, newTable, newTableIndex, key);
+        }
+        // 如果正在扩容 就需要实现一个桶的迁移
+        if (resizing) {
+            if (bucket != oldTable.length) {
+                Node<K, V> node = oldTable[bucket];
+                while (node!=null) {
+                    putNode(node.key,node.value,true);
+                    node = node.next;
+                }
+                // 迁移桶成功后 需要将桶+1
+                bucket++;
+            } else {
+                if (resizing) {
+                    // 代表已经迁移完成
+                    resizing = false;
+                    bucket = 0;
+                    oldTable = newTable;
+                    newTable = null;
+                }
+            }
+        }
+        return kvNode;
+    }
 
     private Node<K,V> get(int hash,Node<K,V> []table,int tableIndex,Object key){
         Node<K,V> entry = table[tableIndex];
@@ -192,7 +226,93 @@ public class Dict<K,V> implements Map<K,V> {
 
     @Override
     public Set<Entry<K, V>> entrySet() {
-        return null;
+        Set<Map.Entry<K,V>> es;
+        return (es = entrySet) == null ? (entrySet = new EntrySet()) : es;
+    }
+    abstract class HashIterator {
+        Node<K,V> next;        // next entry to return
+        Node<K,V> current;     // current entry
+        int expectedModCount;  // for fast-fail
+        int index;             // current slot
+
+        HashIterator() {
+            // 这里全部迁移完成
+                if (resizing) {
+                    while (bucket != oldTable.length) {
+                        Node<K, V> node = oldTable[bucket];
+                        while (node != null) {
+                            putNode(node.key, node.value, true);
+                            node = node.next;
+                        }
+                        // 迁移桶成功后 需要将桶+1
+                        bucket++;
+                    }
+                    if (resizing) {
+                        // 代表已经迁移完成
+                        resizing = false;
+                        bucket = 0;
+                        oldTable = newTable;
+                        newTable = null;
+                    }
+                }
+            expectedModCount = modCount;
+            Node<K,V>[] t = oldTable;
+            current = next = null;
+            index = 0;
+            if (t != null && size > 0) { // advance to first entry
+                do {} while (index < t.length && (next = t[index++]) == null);
+            }
+        }
+
+        public final boolean hasNext() {
+            return next != null;
+        }
+
+        final Node<K,V> nextNode() {
+            Node<K,V>[] t;
+            Node<K,V> e = next;
+            if (modCount != expectedModCount)
+                throw new ConcurrentModificationException();
+            if (e == null)
+                throw new NoSuchElementException();
+            if ((next = (current = e).next) == null && (t = oldTable) != null) {
+                do {} while (index < t.length && (next = t[index++]) == null);
+            }
+            return e;
+        }
+    }
+    final class EntryIterator extends HashIterator
+            implements Iterator<Map.Entry<K,V>> {
+        public final Map.Entry<K,V> next() { return nextNode(); }
+    }
+    final class EntrySet extends AbstractSet<Map.Entry<K,V>> {
+        public final int size()                 { return size; }
+        public final void clear()               { this.clear(); }
+        public final Iterator<Map.Entry<K,V>> iterator() {
+            return new EntryIterator();
+        }
+        public final boolean contains(Object o) {
+            if (!(o instanceof Map.Entry<?, ?> e))
+                return false;
+            Object key = e.getKey();
+            Node<K,V> candidate = getNode(key);
+            return candidate != null && candidate.equals(e);
+        }
+
+        public final void forEach(Consumer<? super Entry<K,V>> action) {
+            Node<K,V>[] tab;
+            if (action == null)
+                throw new NullPointerException();
+            if (size > 0 && (tab = oldTable) != null) {
+                int mc = modCount;
+                for (Node<K,V> e : tab) {
+                    for (; e != null; e = e.next)
+                        action.accept(e);
+                }
+                if (modCount != mc)
+                    throw new ConcurrentModificationException();
+            }
+        }
     }
 
     /**

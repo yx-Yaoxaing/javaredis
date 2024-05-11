@@ -63,12 +63,18 @@ public class RdbDiskStore implements RdbDisk {
 
             AtomicInteger loadDiskToDbTotal = new AtomicInteger();
             while (dataInputStream.available() > 0) {
-                String key = dataInputStream.readUTF();
+                int keyLength = dataInputStream.readInt();
+                byte[] byteKey = new byte[keyLength];
+                // 读取键
+                dataInputStream.readFully(byteKey);
+                String key = new String(byteKey);
 
-                byte[] valueBytes = new byte[dataInputStream.available()];
-                dataInputStream.readFully(valueBytes);
-
-                RedisObject value = serialization.byteArrayToObject(valueBytes);
+                // 读取值的长度
+                int valueLength = dataInputStream.readInt();
+                byte[] byteValue = new byte[valueLength];
+                // 读取值
+                dataInputStream.readFully(byteValue);
+                RedisObject value = serialization.byteArrayToObject(byteValue);
                 // 将键值对放入数据库中
                 db.put(key, value);
                 loadDiskToDbTotal.getAndIncrement();
@@ -88,8 +94,11 @@ public class RdbDiskStore implements RdbDisk {
 
         if (lastTimeChangeTotal == 0 && changeTotal > 0) {
             doSave(db, savePath, changeTotal);
+            log.info("rdb save disk,changeTotal:{}",changeTotal);
+            return;
         }
         if (changeTotal - lastTimeChangeTotal > 5) {
+            log.info("rdb save disk,changeTotal:{}",changeTotal);
             doSave(db, savePath, changeTotal);
         }
     }
@@ -106,13 +115,18 @@ public class RdbDiskStore implements RdbDisk {
             // 4.值
             // 写入键值对数据
 
-
-
             for (Map.Entry<String, RedisObject> entry : db.entrySet()) {
+                String key = entry.getKey();
+                byte[] byteKey = key.getBytes();
+                byte[] byteValue = serialization.objectToByteArray(entry.getValue());
+                // 写入键的长度
+                dataOutputStream.writeInt(byteKey.length);
                 // 写入键
-                dataOutputStream.writeUTF(entry.getKey());
+                dataOutputStream.write(byteKey);
+                // 写入值的长度
+                dataOutputStream.writeInt(byteValue.length);
                 // 写入值
-                dataOutputStream.write(serialization.objectToByteArray(entry.getValue()));
+                dataOutputStream.write(byteValue);
             }
         } catch (IOException e) {
             e.printStackTrace();
