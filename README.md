@@ -32,7 +32,9 @@
 ### rdb和aof
 + <a>https://redisbook.readthedocs.io/en/latest/internal/rdb.html</a> 先看rdb的设计 然后理解它的设计，然后用代码实现即可。
 ### 主从复制
-+ <a>https://redis.io/docs/latest/operate/oss_and_stack/management/replication/</a>
++ 官方文档 <a>https://redis.io/docs/latest/operate/oss_and_stack/management/replication/
++ 理论知识点可以参考ddia这本书的第五章：<<复制>>
++ 目前这个简易Redis，我采用的单领导者（single leader，单主）+异步复制
 ### 数据结构和数据类型
 <a>https://redis.io/docs/latest/develop/data-types/</a>
 #### 数据结构

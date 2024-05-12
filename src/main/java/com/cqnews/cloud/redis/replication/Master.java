@@ -5,4 +5,5 @@ package com.cqnews.cloud.redis.replication;
  * https://redis.io/docs/latest/operate/oss_and_stack/management/replication/
  */
 public class Master {
+
 }
